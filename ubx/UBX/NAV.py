@@ -10,6 +10,7 @@ from ubx.Types import U1, U2, U4, X1, X2, X4, I1, I2, I4
 # Reference for u-blox 8, which is incompatible with u-blox 9 (especially for RELPOSNED)
 # https://www.u-blox.com/sites/default/files/products/documents/u-blox8-M8_ReceiverDescrProtSpec_(UBX-13003221)_Public.pdf
 
+
 @initMessageClass
 class NAV:
     """Message class NAV."""
@@ -40,13 +41,13 @@ class NAV:
             iTOW = U4(1)
             numCh = U1(2)
             globalFlags = X1(3,
-                                 allowed = {
-                                     0 : 'Antaris',
-                                     1 : 'u-Blox 5',
-                                     2 : 'u-Blox 6',
-                                     3 : 'u-Blox 7',
-                                     4 : 'u-Blox 8',
-                                     })
+                             allowed={
+                                 0: 'Antaris',
+                                 1: 'u-Blox 5',
+                                 2: 'u-Blox 6',
+                                 3: 'u-Blox 7',
+                                 4: 'u-Blox 8',
+                             })
             reserved1 = U2(4)
 
             class Repeated:
@@ -59,8 +60,98 @@ class NAV:
                 axim = I2(7)
                 prRes = I4(8)
 
-    @addGet
+    class SAT:
+        u"""32.17.20.1 Satellite information"""
+
+        _id = 0x35
+
+        class Fields:
+            pass
+
+    class SAT_GET:
+        u"""32.17.20.1 Satellite information"""
+
+        _id = 0x35
+
+        class Fields:
+            iTOW = U4(1)
+            version = U1(2, allowed={
+                1: "this_version"
+            })
+            numSvs = U1(3)
+            reserved0 = U2(4)
+
+            class Repeated:
+                gnssId = U1(1,
+                            allowed={
+                                0: 'GPS',
+                                1: 'SBAS',
+                                2: 'Galileo',
+                                3: 'BeiDou',
+                                4: 'IMES',
+                                5: 'QZSS',
+                                6: 'GLONASS',
+                            })
+                svId = U1(2)
+                cno = U1(3)
+                elev = I1(4)
+                azim = I2(5)
+                prRes = I2(6)
+                flags = X4(7, bitfield={
+                    "qualityInd": {"s": 0, "e": 2},
+                    "svUsed": 3,
+                    "health": {"s": 4, "e": 5},
+                    "diffCorr": 6,
+                    "smoothed": 7,
+                    "orbitSource": {"s": 8, "e": 10},
+                    "ephAvail": 11,
+                    "almAvail": 12,
+                    "anoAvail": 13,
+                    "aopAvail": 14,
+                    "sbasCorrUsed": 16,
+                    "rtcmCorrUsed": 17,
+                    "slasCorrUsed": 18,
+                    "spartnCorrUsed": 19,
+                    "prCorrUsed": 20,
+                    "crCorrUsed": 21,
+                    "doCorrUsed": 22,
+                    "clasCorrUsed": 23
+                })
+
+        @property
+        def TOW_str(self):
+            mins, millis = divmod(self.iTOW, 60000)
+            hours, mins = divmod(mins, 60)
+            days, hours = divmod(hours, 24)
+            return "{:1d}-{:02d}:{:02d}:{:04.1f}gps".format(days, hours, mins, millis/1000)
+
+        def summary(self):
+            summary_str = "UBX.NAV.SAT:       TOW: {}, version: {}, numSvs: {}".format(
+                self.TOW_str, self.version, self.numSvs)
+
+            for i in range(1, self.numSvs+1):
+                summary_str += "\r\n  gnssId: {: >2}, svId: {: >3}, cno: {: >3} dBHz, elev: {: >3}, azim: {: >3}, prRes: {: >5}, flags: 0x{:08X}".format(
+                    self.__getattribute__(f'gnssId_{i}'),
+                    self.__getattribute__(f'svId_{i}'),
+                    self.__getattribute__(f'cno_{i}'),
+                    self.__getattribute__(f'elev_{i}'),
+                    self.__getattribute__(f'azim_{i}'),
+                    self.__getattribute__(f'prRes_{i}'),
+                    self.__getattribute__(f'flags_{i}')
+                )
+
+            return(summary_str)
+
     class PVT:
+        u"""32.17.17.1 Navigation position velocity time solution"""
+
+        _id = 0x07
+
+        class Fields:
+            pass
+
+    class PVT_GET:
+        u"""32.17.17.1 Navigation position velocity time solution"""
 
         _id = 0x07
 
@@ -72,16 +163,42 @@ class NAV:
             hour = U1(5)
             min = U1(6)
             sec = U1(7)
-            valid = X1(8)
+            valid = X1(8, bitfield={
+                "validDate": 0,
+                "validTime": 1,
+                "fullyResolved": 2,
+                "validMag": 3
+            })
             tAcc = U4(9)
             nano = I4(10)
-            fixType = U1(11)
-            flags = X1(12)
-            flags2 = X1(13)
+            fixType = U1(11, allowed={
+                0: "no fix",
+                1: "dead reckoning only",
+                2: "2D-fix",
+                3: "3D-fix",
+                4: "GNSS and dead reckoning combined",
+                5: "time only fix"
+            })
+            flags = X1(12, bitfield={
+                "gnssFixOK": 0,
+                "diffSoln": 1,
+                "psmState": {"s": 2, "e": 4},
+                "headVehValid": 5,
+                "carrSoln": {"s": 6, "e": 7}
+            }, allowed={
+                0: "carrSoln_no_phase",
+                1: "carrSoln_floating_ambiguities",
+                2: "carrSoln_fixed_ambiguities"
+            })
+            flags2 = X1(13, bitfield={
+                "confirmedAvai": 5,
+                "confirmedDate": 6,
+                "confirmedTime": 7
+            })
             numSV = U1(14)
             lon = I4(15)    # 1e-7 deg for lon,lat
             lat = I4(16)
-            height = I4(17) # mm for heights; height is above ellipsoid
+            height = I4(17)  # mm for heights; height is above ellipsoid
             hMSL = I4(18)
             hAcc = U4(19)
             vAcc = U4(20)
@@ -93,9 +210,25 @@ class NAV:
             sAcc = U4(26)
             headAcc = U4(27)
             pDOP = U2(28)
-            flags3 = X1(29)
-            reserved1 = U1(30)
-            reserved1x = U4(31)
+            flags3 = X2(29, bitfield={
+                "invalidLlh": 0,
+                "lastCorrectionAge": {"s": 1, "e": 4}
+            }, allowed={
+                0: "lastCorrectionAge_NA",
+                1: "lastCorrectionAge_0_1",
+                2: "lastCorrectionAge_1_2",
+                3: "lastCorrectionAge_2_5",
+                4: "lastCorrectionAge_5_10",
+                5: "lastCorrectionAge_10_15",
+                6: "lastCorrectionAge_15_20",
+                7: "lastCorrectionAge_20_30",
+                8: "lastCorrectionAge_30_45",
+                9: "lastCorrectionAge_45_60",
+                10: "lastCorrectionAge_60_90",
+                11: "lastCorrectionAge_90_120",
+                12: "lastCorrectionAge_120_"
+            })
+            reserved1 = U4(30)
             headVeh = I4(32)
             magDec = I2(33)     # 1e-2 deg for Magnetic declination
             magAcc = U2(34)
@@ -153,7 +286,7 @@ class NAV:
 
         def summary(self):
             return ("UBX.NAV.PVT:       {}z  {:12.7f} E {:11.7f} N {:8.1f} m(MSL)"
-                .format(self.UTC.isoformat()[:21], *self.position_dm)
+                    .format(self.UTC.isoformat()[:21], *self.position_dm)
                     + " speed = {:.3f} m/s at NED: {:.3f}, {:.3f}, {:.3f}"
                     .format(self.speed_m, *self.velNED_m))
 
@@ -171,7 +304,8 @@ class NAV:
             reserved1 = U1(1)
             refStationID = U2(2)
             iTOW = U4(3)
-            relPosN = I4(4)     # WARNING: these cm values must be combined with relPosHP* to get full precision
+            # WARNING: these cm values must be combined with relPosHP* to get full precision
+            relPosN = I4(4)
             relPosE = I4(5)
             relPosD = I4(6)
             relPosLength = I4(7)
@@ -187,7 +321,8 @@ class NAV:
             accLength = U4(17)
             accHeading = U4(18)
             reserved3 = U4(19)
-            flags = X4(20)  # bits[0..7] = [gnssFixOK, diffSoln, relPosValid, carrSoln0,arrSoln1, isMoving, refPosMiss, refObsMiss]
+            # bits[0..7] = [gnssFixOK, diffSoln, relPosValid, carrSoln0,arrSoln1, isMoving, refPosMiss, refObsMiss]
+            flags = X4(20)
 
         @property
         def relPosNED_m(self):

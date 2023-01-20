@@ -10,13 +10,25 @@ from struct import Struct, unpack, pack
 # Note: All classes listed here must be also listed in UBXMessages.py,
 # function classFromMessageClass !!
 
+def parseBitfields(bitfield):
+    for b in bitfield:
+        if type(bitfield[b]) == dict:
+            s = bitfield[b]["s"]
+            e = bitfield[b]["e"]
+            bitfield[b]["mask"] = (((1 << s) - 1) ^((1 << (e+1)) - 1))
+        else:
+            val = bitfield[b]
+            bitfield[b] = {"s":val, "e":val, "mask":1<<(val)}
+    return bitfield
 
 def _InitGenericType(cls):
     """Add the standard __init__ to the class."""
     # 1. add __init__ function to cls
     if cls.__dict__.get('__init__') is None:
-        def __init__(self, _ord, allowed=[]):
+        def __init__(self, _ord, allowed={}, bitfield={}):
             self.ord = _ord
+            self.bitfield = parseBitfields(bitfield)
+            self.allowed = allowed
         setattr(cls, '__init__', __init__)
     # 2. add parse function to cls
     if cls.__dict__.get('parse') is None:
@@ -120,12 +132,13 @@ class R8:
 class CH:
     """ASCII / ISO 8859.1 Encoding."""
     fmt = None  # Not needed
-    def __init__(self, _ord, N, allowed=[], nullTerminatedString=False):
+    def __init__(self, _ord, N, allowed={}, nullTerminatedString=False):
         self.N = N
         self.ord = _ord
         self._size = N
         self._nullTerminatedString = nullTerminatedString
         self.ctype = "char[{}]".format(self.N)
+        self.allowed = allowed
     def parse(self, msg):
         if len(msg) < self.N:
             err = "Message length {} is shorter than required {}"\
@@ -145,13 +158,15 @@ class CH:
             raise Exception(err)
 
 class U:
-    """Variable-length array of unsigned chars."""
+    """Variable-length array of unsigned chars.."""
     fmt = None  # Not needed
-    def __init__(self, _ord, N, allowed=[]):
+    def __init__(self, _ord, N, allowed={}, bitfield={}):
         self.ord = _ord
         self._size = N
         self.N = N
         self.ctype = "uint8_t[{}]".format(self.N)
+        self.bitfield = parseBitfields(bitfield)
+        self.allowed = allowed
     def parse(self, msg):
         if len(msg) < self.N:
             err = "Message length {} is shorter than required {}"\
@@ -168,3 +183,7 @@ class U:
                   .format(len(val), self._size)
             raise Exception(err)
         return val
+
+class X(U):
+    """Variable-length array of bitfields"""
+    pass

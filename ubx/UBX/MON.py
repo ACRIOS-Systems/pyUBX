@@ -9,8 +9,14 @@ class MON:
 
     _class = 0x0A
 
-    @addGet
     class VER:
+
+        _id = 0x04
+
+        class Fields:
+                pass
+
+    class VER_GET:
 
         _id = 0x04
 
