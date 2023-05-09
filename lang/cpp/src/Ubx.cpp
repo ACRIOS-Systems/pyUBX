@@ -60,7 +60,7 @@ SerializeCommon::status_t SerializeCommon::serialize(uint8_t *buf, uint16_t bufL
 
 SerializeCommon::status_t SerializeCommon::serialize(writeCb_t writeCb, void *userData) const
 {
-    int32_t ret;
+    status_t ret;
     const uint16_t bufLen = getDataSize() + UbxControlBytesSize;
     uint8_t buf[bufLen] = {0};
 
@@ -68,7 +68,10 @@ SerializeCommon::status_t SerializeCommon::serialize(writeCb_t writeCb, void *us
 
     if (!ret)
     {
-        ret = writeCb(this, buf, bufLen, userData);
+        if (!writeCb(this, buf, bufLen, userData))
+        {
+            ret = WriteCbErr;
+        }
     }
 
     return ret;

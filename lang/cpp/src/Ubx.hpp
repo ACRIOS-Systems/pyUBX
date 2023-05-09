@@ -62,6 +62,7 @@ namespace ubx
         using writeCb_t = int32_t(const SerializeCommon *serializedClass, const uint8_t *data, uint16_t len, void *userData);
 
         using status_t = enum _status_t { OK = 0,
+                                          WriteCbErr,
                                           BufferLengthSmall };
 
         /**
