@@ -10,16 +10,18 @@ from ubx import UBX
 from pathlib import Path
 
 
-__version__ = "0.1"
+__version__ = "0.2"
 
 
 def isFieldType(obj):
     """Test if object is a Type in a Field."""
+
     return obj.__class__.__module__ == 'Types'
 
 
 def isFieldRepeated(obj):
     """Test if object is a Repeated 'type' in a Field."""
+
     if inspect.isclass(obj):
         return getClassName(obj).split(".")[-1] == "Repeated"
     else:
@@ -28,6 +30,7 @@ def isFieldRepeated(obj):
 
 def makeComment(s):
     """Comment out a (multiline) string."""
+
     if s is None or s == "":
         return None
     l = s.split("\n")
@@ -53,14 +56,20 @@ def makeMemberDecl(typ, name):
 
 
 def getBitName(field,  bit):
+    """Return unique name of bit."""
+
     return field[0] + "_" + bit
 
 
-def getBitNameUp(field, bit):
+def getBitNameUpperCase(field, bit):
+    """Return unique name of bit with upper characters."""
+
     return getBitName(field, bit).upper()
 
 
 def generateEnumDefinitions(fields, file, repeated=False):
+    """Generate bitfield allowed values as C enums from the corresponding py classes allowed dict fields."""
+
     if fields:
         if repeated:
             name = "repeated_"
@@ -84,6 +93,8 @@ def generateEnumDefinitions(fields, file, repeated=False):
 
 
 def generateMacroDefinitions(fields, file, name, repeated=False):
+    """Generate macro definitions for bit mask and bit offset."""
+
     if fields:
         if repeated:
             name += "_REPEATED"
@@ -93,12 +104,14 @@ def generateMacroDefinitions(fields, file, name, repeated=False):
                 file.write(f"\n")
                 for bit in bitfield:
                     file.write(
-                        f"#define {name}_{getBitNameUp(field, bit)}_OFFSET ({bitfield[bit]['s']})\n")
+                        f"#define {name}_{getBitNameUpperCase(field, bit)}_OFFSET ({bitfield[bit]['s']})\n")
                     file.write(
-                        f"#define {name}_{getBitNameUp(field, bit)}_MASK ({bitfield[bit]['mask']})\n")
+                        f"#define {name}_{getBitNameUpperCase(field, bit)}_MASK ({bitfield[bit]['mask']})\n")
 
 
-def generateUsageOfMacroDefinitions(fields, file, name, repeated=False):
+def generateGetSetBitfieldDeclarations(fields, file, name, repeated=False):
+    """Generate get and set function declarations for manipulating with bits"""
+
     if fields:
         if repeated:
             name += "_REPEATED"
@@ -120,7 +133,9 @@ def generateUsageOfMacroDefinitions(fields, file, name, repeated=False):
                         f"        uint8_t {name2}{getBitName(field, bit)}({nDef}) const;\n")
 
 
-def generateUsageOfMacroDefinitionsBody(fields, file, className, name, repeated=False):
+def generateGetSetBitfieldDefinition(fields, file, className, name, repeated=False):
+    """Generate get and set function definitions for manipulating with bits"""
+
     if fields:
         if repeated:
             name += "_REPEATED"
@@ -139,12 +154,14 @@ def generateUsageOfMacroDefinitionsBody(fields, file, className, name, repeated=
                 file.write(f"\n")
                 for bit in bitfield:
                     file.write(
-                        f"void ubx::{className}::_data::{name2}{getBitName(field, bit)}(uint8_t val{nDefCom}{nDef}){{ UBX_CHANGE_VAR_BIT({repeatedName}{field[0]}, val, {name}_{getBitNameUp(field, bit)}_MASK, {name}_{getBitNameUp(field, bit)}_OFFSET); }}\n")
+                        f"void ubx::{className}::_data::{name2}{getBitName(field, bit)}(uint8_t val{nDefCom}{nDef}){{ UBX_CHANGE_VAR_BIT({repeatedName}{field[0]}, val, {name}_{getBitNameUpperCase(field, bit)}_MASK, {name}_{getBitNameUpperCase(field, bit)}_OFFSET); }}\n")
                     file.write(
-                        f"uint8_t ubx::{className}::_data::{name2}{getBitName(field, bit)}({nDef})const{{ return UBX_GET_VAR_BIT({repeatedName}{field[0]}, {name}_{getBitNameUp(field, bit)}_MASK, {name}_{getBitNameUp(field, bit)}_OFFSET); }}\n")
+                        f"uint8_t ubx::{className}::_data::{name2}{getBitName(field, bit)}({nDef})const{{ return UBX_GET_VAR_BIT({repeatedName}{field[0]}, {name}_{getBitNameUpperCase(field, bit)}_MASK, {name}_{getBitNameUpperCase(field, bit)}_OFFSET); }}\n")
 
 
 def makeMessageStruct(file, className, Message):
+    """Generate struct declarations for each Ubx object declared in python files."""
+
     messageName = getMessageName(
         Message, withUBX=False, withMessageClass=False)
     # fullClassName = "{}::{}".format(className, messageName)
@@ -193,15 +210,17 @@ def makeMessageStruct(file, className, Message):
     file.write("\n")
     generateEnumDefinitions(fieldsNotRepeated, file)
     generateEnumDefinitions(fieldsRepeated, file, True)
-    generateUsageOfMacroDefinitions(
+    generateGetSetBitfieldDeclarations(
         fieldsNotRepeated, file, fullClassNameUnder)
-    generateUsageOfMacroDefinitions(
+    generateGetSetBitfieldDeclarations(
         fieldsRepeated, file, fullClassNameUnder, True)
     file.write("    } data;\n")
     file.write("};\n\n")
 
 
 def makeMessageStructBody(file, className, Message):
+    """Generate struct definitions for each Ubx object declared in python files."""
+
     def returnStrNumber(attribute, isRepeated=False):
         name = attribute[0]
         type = attribute[1].ctype
@@ -300,9 +319,9 @@ def makeMessageStructBody(file, className, Message):
     if fieldsRepeated:
         file.write(" + (repeatedLen * repeatedSize)")
     file.write("; }\n")
-    generateUsageOfMacroDefinitionsBody(
+    generateGetSetBitfieldDefinition(
         fieldsNotRepeated, file, fullClassName, fullClassNameUnder)
-    generateUsageOfMacroDefinitionsBody(
+    generateGetSetBitfieldDefinition(
         fieldsRepeated, file, fullClassName, fullClassNameUnder, True)
     if fieldsRepeated:
         file.write(
@@ -320,14 +339,14 @@ def generateCPP_main():
     def caseOutput(file, fields, className, messageName, indent=""):
         repeated = list(
             filter(lambda f: isFieldRepeated(f[1]), getClassMembers(fields)))
-        print()
-        print(className)
-        print(messageName)
-        print(getClassMembers(fields))
-        print(repeated)
+        # print()
+        # print(className)
+        # print(messageName)
+        # print(getClassMembers(fields))
+        # print(repeated)
         repeatLen = ""
         if repeated:
-            repeatLen= " + 2U"
+            repeatLen = " + 2U"
         file.write(
             indent+f"uint8_t *heap = new uint8_t[sizeof(ubx::SerializeCommon) + len{repeatLen}];\n")
         file.write(
@@ -414,12 +433,25 @@ def generateCPP_main():
         className = getMessageName(Cls, withUBX=False, withMessageName=False)
         file.write("#include \"messages/{}.hpp\"\n".format(className))
     file.write("\nnamespace ubx\n{\n")
-    file.write(
-        "    class ParseUbxMessage : public ParseUbxMessageBase\n    {\n")
+    file.write("    /**"
+               "     * @brief Class which is determined to parse byte array and return UBX object."
+               "     */"
+               "    class ParseUbxMessage : public ParseUbxMessageBase\n    {\n")
     file.write("        public:\n")
     file.write("            ParseUbxMessage():ParseUbxMessageBase(){};\n")
     file.write("        protected:\n")
-    file.write("            virtual std::shared_ptr<SerializeCommon> createUbx(const uint8_t *buf, uint16_t len, uint8_t classId, uint8_t messageID, bool isGet = true) const override;\n")
+    file.write("            /**"
+               "             * @brief Return Ubx object parsed from given buffer and object details."
+               "             *"
+               "             * @param buf buffer with data"
+               "             * @param len buffer length"
+               "             * @param classId Ubx class id"
+               "             * @param messageID Ubx message id"
+               "             * @param isGet Is get type."
+               "             *"
+               "             * @return std::shared_ptr<SerializeCommon> Nullptr or shared_ptr of UBX object."
+               "             */"
+               "            virtual std::shared_ptr<SerializeCommon> createUbx(const uint8_t *buf, uint16_t len, uint8_t classId, uint8_t messageID, bool isGet = true) const override;\n")
     file.write("    };\n")
     file.write("}\n")
     file.write("#endif // #define {}\n".format(ifndefName))

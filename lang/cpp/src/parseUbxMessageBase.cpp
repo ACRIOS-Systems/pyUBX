@@ -25,13 +25,9 @@ int32_t ParseUbxMessageBase::findUbxMessageLen(const uint8_t *buf, uint16_t len,
 
     if (startIdx > -1)
     {
-        if ((startIdx + minimalSize) <= len)
+        if ((startIdx + IDX_LEN_H + 1U) <= len)
         {
-            ret = startIdx + minimalSize + buf[startIdx + IDX_LEN_L] + (buf[startIdx + IDX_LEN_H] << 8U);
-            if ((startIdx + ret) > len)
-            {
-                ret = -2;
-            }
+            ret = startIdx + SerializeCommon::UbxControlBytesSize + buf[startIdx + IDX_LEN_L] + (buf[startIdx + IDX_LEN_H] << 8U);
         }
     }
 
@@ -43,9 +39,9 @@ shared_ptr<SerializeCommon> ParseUbxMessageBase::parseUbx(const uint8_t *buf, ui
     shared_ptr<SerializeCommon> ret = nullptr;
     parameters_t param = getUbxMessageParameters(buf, len);
 
-    if (param.len > -1)
+    if ((param.len > -1) && ((param.startIdx + param.len) <= len))
     {
-        ret = createUbx(&buf[param.startIdx + IDX_DATA_START], param.len, buf[param.startIdx + IDX_CLASS_ID], buf[param.startIdx + IDX_MESSAGE_ID]);
+        ret = createUbx(&buf[param.startIdx + IDX_DATA_START], param.len - SerializeCommon::UbxControlBytesSize, buf[param.startIdx + IDX_CLASS_ID], buf[param.startIdx + IDX_MESSAGE_ID]);
     }
 
     return ret;

@@ -21,11 +21,11 @@ void SerializeCommon::writeByte(uint8_t byte, uint8_t *data, uint16_t &index) co
     index++;
 }
 
-int32_t SerializeCommon::serialize(uint8_t *buf, uint16_t bufLen) const
+SerializeCommon::status_t SerializeCommon::serialize(uint8_t *buf, uint16_t bufLen) const
 {
-    int32_t ret;
+    status_t ret;
 
-    if (bufLen < getDataSize() + PayloadPlusSize)
+    if (bufLen < getDataSize() + UbxControlBytesSize)
     {
         ret = BufferLengthSmall;
     }
@@ -58,10 +58,10 @@ int32_t SerializeCommon::serialize(uint8_t *buf, uint16_t bufLen) const
     return ret;
 };
 
-int32_t SerializeCommon::serialize(writeCb_t writeCb, void *userData) const
+SerializeCommon::status_t SerializeCommon::serialize(writeCb_t writeCb, void *userData) const
 {
     int32_t ret;
-    const uint16_t bufLen = getDataSize() + PayloadPlusSize;
+    const uint16_t bufLen = getDataSize() + UbxControlBytesSize;
     uint8_t buf[bufLen] = {0};
 
     ret = serialize(buf, bufLen);
