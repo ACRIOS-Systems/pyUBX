@@ -339,21 +339,17 @@ def generateCPP_main():
     def caseOutput(file, fields, className, messageName, indent=""):
         repeated = list(
             filter(lambda f: isFieldRepeated(f[1]), getClassMembers(fields)))
-        # print()
-        # print(className)
-        # print(messageName)
-        # print(getClassMembers(fields))
-        # print(repeated)
-        repeatLen = ""
-        if repeated:
-            repeatLen = " + 2U"
-        file.write(
-            indent+f"uint8_t *heap = new uint8_t[sizeof(ubx::SerializeCommon) + len{repeatLen}];\n")
-        file.write(
-            indent+f"ret = shared_ptr<{className}::{messageName}>(new (heap) {className}::{messageName});\n")
+
         if repeated:
             file.write(
+                indent+f"uint8_t *heap = new uint8_t[sizeof({className}::{messageName}) + (len - sizeof(struct {className}::{messageName}::_data))];\n")
+            file.write(
+                indent+f"ret = shared_ptr<{className}::{messageName}>(new (heap) {className}::{messageName});\n")
+            file.write(
                 indent+f"dynamic_cast<{className}::{messageName}*>(ret.get())->repeatedLen = (len - sizeof(struct {className}::{messageName}::_data)) / sizeof(struct {className}::{messageName}::_data::_repeated);\n")
+        else:
+            file.write(
+                indent + f"ret = shared_ptr<{className}::{messageName}>(new {className}::{messageName});\n")
 
     topdir = Path(__file__).parent.parent
     cppsrcdir = topdir.joinpath("lang", "cpp", "src")
@@ -433,24 +429,24 @@ def generateCPP_main():
         className = getMessageName(Cls, withUBX=False, withMessageName=False)
         file.write("#include \"messages/{}.hpp\"\n".format(className))
     file.write("\nnamespace ubx\n{\n")
-    file.write("    /**"
-               "     * @brief Class which is determined to parse byte array and return UBX object."
-               "     */"
+    file.write("    /**\n"
+               "     * @brief Class which is determined to parse byte array and return UBX object.\n"
+               "     */\n"
                "    class ParseUbxMessage : public ParseUbxMessageBase\n    {\n")
     file.write("        public:\n")
     file.write("            ParseUbxMessage():ParseUbxMessageBase(){};\n")
     file.write("        protected:\n")
-    file.write("            /**"
-               "             * @brief Return Ubx object parsed from given buffer and object details."
-               "             *"
-               "             * @param buf buffer with data"
-               "             * @param len buffer length"
-               "             * @param classId Ubx class id"
-               "             * @param messageID Ubx message id"
-               "             * @param isGet Is get type."
-               "             *"
-               "             * @return std::shared_ptr<SerializeCommon> Nullptr or shared_ptr of UBX object."
-               "             */"
+    file.write("            /**\n"
+               "             * @brief Return Ubx object parsed from given buffer and object details.\n"
+               "             *\n"
+               "             * @param buf buffer with data\n"
+               "             * @param len buffer length\n"
+               "             * @param classId Ubx class id\n"
+               "             * @param messageID Ubx message id\n"
+               "             * @param isGet Is get type.\n"
+               "             *\n"
+               "             * @return std::shared_ptr<SerializeCommon> Nullptr or shared_ptr of UBX object.\n"
+               "             */\n"
                "            virtual std::shared_ptr<SerializeCommon> createUbx(const uint8_t *buf, uint16_t len, uint8_t classId, uint8_t messageID, bool isGet = true) const override;\n")
     file.write("    };\n")
     file.write("}\n")
@@ -527,7 +523,7 @@ def generateCPP_main():
     file.write("        default:\n        {\n            break;\n        }\n")
     file.write("    }\n")
     file.write("    if (ret != nullptr)\n    {\n")
-    file.write("        (void)memcpy(ret->getDataStartAddress(), buf, len);\n")
+    file.write("        (void)memcpy(ret->getDataStartAddress(), buf, ret->getDataSize());\n")
     file.write("    }\n\n")
     file.write("    return ret;\n")
     file.write("}\n")
