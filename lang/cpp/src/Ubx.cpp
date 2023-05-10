@@ -68,7 +68,7 @@ SerializeCommon::status_t SerializeCommon::serialize(writeCb_t writeCb, void *us
 
     if (!ret)
     {
-        if (!writeCb(this, buf, bufLen, userData))
+        if (!!writeCb(this, buf, bufLen, userData))
         {
             ret = WriteCbErr;
         }
