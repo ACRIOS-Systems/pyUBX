@@ -1,7 +1,8 @@
 all: lang/cpp/src
-	./ubx/generateCpp.py
+	pip install .
+	./ubx/generateCPP.py
 
-test:
+test: all
 	make -C lang/cpp/ test
 	python tests/tests.py
 	python tests/test_relposned.py
