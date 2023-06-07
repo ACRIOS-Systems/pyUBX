@@ -15,15 +15,8 @@ class RXM:
         _id = 0x61
 
         class Fields:
-            pass
-
-    class IMES_GET:
-
-        _id = 0x61
-
-        class Fields:
             numTx = U1(1)
-            version = U1(2)
+            version = U1(2, allowed = {1 : "this_version"})
             reserved1 = U(3,2)
             class Repeated:
                 reserved2 = U1(1)
@@ -50,13 +43,10 @@ class RXM:
                     "shortValid": 12,
                     "shortBoundary": 13})
                 mediumIdLSB = U4(13)
-                mediumId2 = X4(14, bitfield={
+                mediumId_2 = X4(14, bitfield={
                     "mediumIdMSB": 0,
                     "mediumValid": 1,
                     "mediumboundary": 2})
-    @addGet
-
-
 
     class MEASX:
         """TODO: MISSING IMPLEMENTATION"""
@@ -81,7 +71,7 @@ class RXM:
         _id = 0x41
 
         class Fields:
-            version = U1(1)
+            version = U1(1, allowed = {0 : "this_version"})
             reserved1 = U(2, 3)
             duration = U4(3)
             flags = X4(4,bitfield={
