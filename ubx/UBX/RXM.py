@@ -56,16 +56,6 @@ class RXM:
                 pass
 
     class PMREQ:
-        u"""Power management request"""
-
-        _id = 0x41
-
-        class Fields:
-            duration = U4(1)
-            flags = X4(2,bitfield={
-                    "backup": 1})
-
-    class PMREQ2:
         """Power management request"""
 
         _id = 0x41
