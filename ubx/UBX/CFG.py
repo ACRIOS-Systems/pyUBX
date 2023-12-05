@@ -164,6 +164,40 @@ class CFG:
                     5: "NavIC time"
                 })
 
+    class RST:
+        u"""32.10.29.1 Reset receiver / Clear backup data structures
+
+        Do not expect this message to be acknowledged by the receiver.
+        • Newer FW version will not acknowledge this message at all.
+        • Older FW version will acknowledge this message but the acknowledge may not
+        be sent completely before the receiver is reset.
+        Notes:
+        • If Galileo is enabled, UBX-CFG-RST Controlled GNSS start must be followed by
+        UBX-CFG-CFG to save current configuration to BBR and then by UBX-CFG-RST
+        with resetMode set to Hardware reset.
+        • If Galileo is enabled, use resetMode Hardware reset instead of Controlled
+        software reset or Controlled software reset (GNSS only).
+        """
+
+        _id = 0x04
+
+        class Fields:
+            navBbrMask = X2(1, allowed={
+                    0:"HOT_START",
+                    1:"WARM_START",
+                    0xFFFF: "COLD_START"
+                })
+            resetMode = U1(2, allowed={
+                    0:"HW",
+                    1:"SW",
+                    2:"SW_GNSS_ONLY",
+                    3: "HW_AFTER_SHUTDOWN",
+                    8: "STOP",
+                    9: "START",
+                })
+            reserved1 = U1(3)   # reserved
+
+
     @addGet
     class RXM:
         u"""§31.11.27 RXM configuration.
