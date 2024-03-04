@@ -27,7 +27,7 @@ int32_t ParseUbxMessageBase::findUbxMessageLen(const uint8_t *buf, uint16_t len,
     {
         if ((startIdx + IDX_LEN_H + 1U) <= len)
         {
-            ret = startIdx + SerializeCommon::UbxControlBytesSize + buf[startIdx + IDX_LEN_L] + (buf[startIdx + IDX_LEN_H] << 8U);
+            ret = SerializeCommon::UbxControlBytesSize + buf[startIdx + IDX_LEN_L] + (buf[startIdx + IDX_LEN_H] << 8U);
         }
     }
 
