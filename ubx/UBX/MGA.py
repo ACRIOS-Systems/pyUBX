@@ -1,5 +1,5 @@
 from ubx.UBXMessage import UBXMessage, initMessageClass
-from ubx.Types import U1, U2, U4, X2, X4, U, I2, I4, X, X1
+from ubx.Types import U1, U2, U4, X2, X4, U, I1, I2, I4, X, X1
 
 
 @initMessageClass
@@ -87,3 +87,37 @@ class MGA:
             })
             reserved1 = U1(4)
             sequence = U2(5)
+
+    class INI_TIME_UTC:
+        u"""25.13.9.3 UBX-MGA-INI-TIME_UTC"""
+
+        _id = 0x40
+
+        class Fields:
+            type = U1(1, allowed={
+                0x10: "this_type"
+            })
+            version = U1(2, allowed={
+                0: "this_version"
+            })
+            ref=X1(3, bitfield={
+                "source":{"s": 0, "e": 3},
+                "fall":4,
+                "last":5
+            }, allowed={
+                0:"source_none",
+                1:"source_relativeToExtint0",
+                2:"source_relativeToExtint1"
+            })
+            leapSecs=I1(4)
+            year=U2(5)
+            month=U1(6)
+            day=U1(7)
+            hour=U1(8)
+            minute=U1(9)
+            second=U1(10)
+            reserved1=U1(11)
+            ns=U4(12)
+            tAccS=U2(13)
+            reserved2=U2(14)
+            tAccNs=U4(15)

@@ -26,8 +26,16 @@ class MON:
             class Repeated:
                 extension = CH(1, 30, nullTerminatedString=True)
 
-    @addGet
     class HW:
+        """§31.17.3.1 Hardware Status."""
+
+        _id = 0x09
+
+        class Fields:
+                pass
+
+    @addGet
+    class HW_GET:
         """§31.17.3.1 Hardware Status."""
 
         _id = 0x09
