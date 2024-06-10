@@ -141,6 +141,28 @@ namespace ubx
          */
         status_t serialize(writeCb_t writeCb, void *userData) const;
     };
+
+    /**
+     * @brief This is basic class for simple GET function without payload
+     */
+    class UbxGet : public SerializeCommon
+    {
+        uint8_t m_classId;
+        uint8_t m_messageId;
+        std::string m_className;
+        std::string m_messageName;
+
+        public:
+            UbxGet(uint8_t classId, uint8_t messageId, const std::string &className, const std::string &messageName);
+
+        virtual uint8_t getClassId(void) const override;
+        virtual uint8_t getMessageId(void) const override;
+        virtual const std::string &getClassName(void) const override;
+        virtual std::string getMessageName(void) const override;
+        virtual std::string getDescription(void) const override;
+        virtual uint8_t* getDataStartAddress(void) const override;
+        virtual uint16_t getDataSize(void) const override;
+    };
 }
 
 #endif // #define __UBX_H__
